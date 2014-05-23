@@ -81,6 +81,7 @@ CanvasImage.prototype.removeCanvas = function () {
 
 
 var ColorThief = function () {};
+ColorThief.CanvasImage = CanvasImage;
 
 /*
  * getColor(sourceImage[, quality])
@@ -130,6 +131,24 @@ ColorThief.prototype.getPalette = function(sourceImage, colorCount, quality) {
 
     // Create custom CanvasImage object
     var image      = new CanvasImage(sourceImage);
+    var palette    = this.getPaletteFromCanvasImage(image, colorCount, quality);
+
+    // Clean up
+    image.removeCanvas();
+
+    return palette;
+};
+
+/*
+ * getPaletteFromCanvasImage(image, colorCount, quality)
+ * returns array[ {r: num, g: num, b: num}, {r: num, g: num, b: num}, ...]
+ *
+ * Low-level function that takes a CanvasImage and computes color palette.
+ * Used by getPalette() and getColor()
+ *
+ */
+ColorThief.prototype.getPaletteFromCanvasImage = function(image, colorCount, quality) {
+
     var imageData  = image.getImageData();
     var pixels     = imageData.data;
     var pixelCount = image.getPixelCount();
@@ -155,14 +174,8 @@ ColorThief.prototype.getPalette = function(sourceImage, colorCount, quality) {
     var cmap    = MMCQ.quantize(pixelArray, colorCount);
     var palette = cmap.palette();
 
-    // Clean up
-    image.removeCanvas();
-
     return palette;
-};
-
-
-
+}
 
 /*!
  * quantize.js Copyright 2008 Nick Rabinowitz.
