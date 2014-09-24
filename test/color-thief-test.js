@@ -31,9 +31,11 @@ exports['color-thief'] = {
   color: function(test) {
     var filename =  __dirname + '/../img/photo1.jpg';
     var colorThief = new ColorThief();
-    var color = colorThief.getColor(filename);
+    colorThief.getColor(filename, 10, function(color) {
+      test.deepEqual(color, [125, 190, 193], 'correct color returned');
+      test.done();
+    });
 
-    test.deepEqual(color, [125, 190, 193], 'correct color returned');
-    test.done();
+    
   }
 };

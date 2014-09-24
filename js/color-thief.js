@@ -1,5 +1,5 @@
 /*
- * Color Thief v2.0
+ * Color Thief v1000.0
  * by Lokesh Dhakar - http://www.lokeshdhakar.com
  *
  * License
@@ -33,15 +33,27 @@ if (iAmOnNode) {
   var fs = require('fs');
 }
 
-var CanvasImage = function (image) {
+var CanvasImage = function (image, callback) {
     // in node we use strings as path to an image
     // whereas in the browser we use an image element
+    
     if (iAmOnNode) {
       this.canvas = new Canvas()
       var img = new Image;
+      var that = this;
+      
+      img.onload = function() { 
+        that.context = that.canvas.getContext('2d');
 
+        that.width  = that.canvas.width  = img.width;
+        that.height = that.canvas.height = img.height;
+        that.context.drawImage(img, 0, 0, that.width, that.height);
+        
+        callback.call(that)
+      };
       if(image instanceof Buffer) {
         img.src = image
+        
       }else{
         img.src = fs.readFileSync(image);
       }
@@ -52,12 +64,7 @@ var CanvasImage = function (image) {
       var img = image;
     }
     
-    this.context = this.canvas.getContext('2d');
-
-    this.width  = this.canvas.width  = img.width;
-    this.height = this.canvas.height = img.height;
-
-    this.context.drawImage(img, 0, 0, this.width, this.height);
+    
 };
 
 CanvasImage.prototype.clear = function () {
@@ -98,10 +105,13 @@ var ColorThief = function () {};
  * most dominant color.
  *
  * */
-ColorThief.prototype.getColor = function(sourceImage, quality) {
-    var palette       = this.getPalette(sourceImage, 5, quality);
-    var dominantColor = palette[0];
-    return dominantColor;
+ColorThief.prototype.getColor = function(sourceImage, quality, callback) {
+    this.getPalette(sourceImage, 5, quality, function(palette) {
+      var dominantColor = palette[0];
+      callback(dominantColor)      
+    });
+    //var dominantColor = palette[0];
+    //return dominantColor;
 };
 
 
@@ -122,7 +132,7 @@ ColorThief.prototype.getColor = function(sourceImage, quality) {
  *
  *
  */
-ColorThief.prototype.getPalette = function(sourceImage, colorCount, quality) {
+ColorThief.prototype.getPalette = function(sourceImage, colorCount, quality, callback) {
 
     if (typeof colorCount === 'undefined') {
         colorCount = 10;
@@ -130,18 +140,18 @@ ColorThief.prototype.getPalette = function(sourceImage, colorCount, quality) {
     if (typeof quality === 'undefined') {
         quality = 10;
     };
-
+    var that = this;
     // Create custom CanvasImage object
-    var image      = new CanvasImage(sourceImage);
-    var imageData  = image.getImageData();
-    var pixels     = imageData.data;
-    var pixelCount = image.getPixelCount();
-    var palette    = this.getPaletteFromPixels(pixels, pixelCount, colorCount, quality);
-
-    // Clean up
-    image.removeCanvas();
-
-    return palette;
+    new CanvasImage(sourceImage, function(image) {
+      var imageData  = this.getImageData();
+      var pixels     = imageData.data;
+      var pixelCount = this.getPixelCount();
+      var palette    = that.getPaletteFromPixels(pixels, pixelCount, colorCount, quality);
+      // Clean up
+      this.removeCanvas();
+      callback(palette);
+    });
+    
 };
 
 /*
